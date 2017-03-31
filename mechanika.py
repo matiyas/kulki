@@ -4,8 +4,8 @@ from itertools import product
 from random import randint
 
 
-# Macierz 10x10 przechowująca pozycję kul
-plansza = [[' ' for x in xrange(10)] for y in xrange(10)]
+#plansza = [[' ' for x in xrange(10)] for y in xrange(10)]
+kulki = set()   # Zbiór przechowujący pozycje kul
 
 
 def przesun(kulka, pozycja, kulki, plansza, szerokosc, wysokosc):
@@ -25,12 +25,12 @@ def przesun(kulka, pozycja, kulki, plansza, szerokosc, wysokosc):
     """
     # Sprawdzanie, czy podane pozycje są prawidłowe
     if (0 <= kulka[1] < szerokosc) and (0 <= kulka[0] < wysokosc) and\
-       (0 <= pozycja[1] < szerokosc) and (0 <= pozycja[0] < wysokosc) and\
-       (plansza[pozycja[1]][pozycja[0]] == ' ') and (plansza[kulka[1]][kulka[0]] == 'O'):
+       (0 <= pozycja[1] < szerokosc) and (0 <= pozycja[0] < wysokosc): #and\
+       #(plansza[pozycja[1]][pozycja[0]] == ' ') and (plansza[kulka[1]][kulka[0]] == 'O'):
 
         # Przesunięcie kulki na planszy
-        plansza[kulka[1]][kulka[0]] = ' '
-        plansza[pozycja[1]][pozycja[0]] = 'O'
+        # plansza[kulka[1]][kulka[0]] = ' '
+        # plansza[pozycja[1]][pozycja[0]] = 'O'
 
         # Zmiana pozycji kuli w zbiorze
         kulki.remove((kulka[1], kulka[0]))
@@ -53,9 +53,9 @@ def losuj_kulki(kulki, n, plansza, szerokosc, wysokosc):
         
         Metoda losuje n nowych kul, których pozycje dopisuje do zbioru 'kulki' oraz do planszy
     """
-    # Losowanie 50 pozycji kul
-    kulki = set()
-    while len(kulki) < 50:
+    # Losowanie n pozycji kul
+    ilosc_kul = len(kulki)
+    while len(kulki) < ilosc_kul + n:
         kulki.add((randint(0, 9), randint(0, 9)))
 
     # Zaznaczenie na planszy pozycji kul
