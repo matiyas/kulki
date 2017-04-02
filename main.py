@@ -9,7 +9,9 @@ from random import randint
 
 
 class Plansza(Gtk.Table):
+    """Klasa reprezentująca planszę z przyciskami."""
     def __init__(self):
+        """Metoda tworzy planszę z 10 kolumnami, w których znajduje się po 10 przycisków o rozmiarze 40 x 40 każdy."""
         Gtk.Table.__init__(self, 10, 10, True)
         # Macierz 10 x 10 przechowująca przyciski
         self.przyciski = [[Gtk.ToggleButton() for x in xrange(10)] for y in xrange(10)]
@@ -21,8 +23,16 @@ class Plansza(Gtk.Table):
             self.attach(self.przyciski[x][y], x, x + 1, y, y + 1)
 
     def ustaw_przycisk(self, przycisk, kolor_nr):
+        """Metoda ustawiająca kulki na przyciskach.
+        
+        Argumenty:
+            przycisk (Gtk.ToggleButton):    Przycisk, na którym ma zostać ustawiony obrazek kulki.
+            kolor_nr (int):                 Klucz ze słownika kolory.
+        
+        Metoda ustawia odpowiedni obrazek na przycisku, gdzie kolor_nr równy: 1 - żółty, 2 - niebieski, 3 - czerwony, 4 - zielony, 
+        5 - różowy. Jeśli kolor_nr nie znajduje się w przedziale 1 - 5, to na przycisku nie zostanie ustawiony żaden obrazek.
+        """
         img = Gtk.Image()
-
         # Ustawienie obrazka na przycisku
         if 0 < kolor_nr <= 5:
             przycisk.set_image(img)
@@ -33,7 +43,11 @@ class Plansza(Gtk.Table):
 
 
 class App(object):
+    """Klasa odpowiadająca za mechanikę gry."""
     def __init__(self):
+        """ Metoda tworzy okno na którym znajdują się: obiekt klasy Plansza, pole wyświetlające aktualna liczbę punktów,  pole wyświetlające
+        5 najlepszych wyników, oraz przycisk odpowiadający za rozpoczęcie nowej rozgrywki.
+        """
         self.window = Gtk.Window(title='Kulki')
         self.plansza = Plansza()
         self.hbox1 = Gtk.HBox()
@@ -73,16 +87,41 @@ class App(object):
         self.nowa_gra(self.nowa_gra_btn)
 
     def sprawdz(self, x, y):
+        """Metoda sprawdzająca współlinowość sąsiadujących ze sobą kulek.
+        
+        Argumenty:
+            x (int):    Pozycja x przycisku na planszy.
+            y (int):    Pozycja y przycisku na planszy.
+            
+        Metoda sprawdza, czy kulka, znajdująca się na pozycji podanej w argumencie, znajduje się w linii poziomej, pionowej lub ukośnej,
+        składającej się z 5 lub więcej sąsiadujących ze sobą kulek o tym samym kolorze, a następnie usuwa te kulki.
+        
+        Zwraca:
+            True, jeśli kulka znajdowała się w linii.
+            False, w przeciwnym wypadku.
+        """
         kolor = self.kulki_mx[x][y]
         czy_usunac = False
         do_usuniecia = []
 
-        def sprawdz_linie(x, y, ix, iy, zlicz):
+        def sprawdz_linie(x, y, ax, ay, zlicz):
+            """Metoda sprawdzająca współliniowość sąsiadujących kulek w odcinku.
+            
+            Argumenty:
+                x (int):        Początkowa wartość odcinka w poziomie.
+                y (int):        Początkowa wartość odcinka w pionie.
+                ax (int):       Przyrost x.
+                ay (int):       Przyrost y.
+                zlicz (int):    Zmienna przechowująca ilość kulek wsółliniowych.
+                
+            Metoda zwraca ilość kolejnych sąsiadujących kulek, o tym samym kolorze co kulka podana w metodzie nadrzędnej, znajdujących się 
+            na odcinku o punkcie początkowym (x, y), z przyrostem x o ax i y o ay.
+            """
             while 0 <= x < 10 and 0 <= y < 10 and kolor == self.kulki_mx[x][y]:
                 zlicz += 1
                 do_usuniecia.append((x, y))
-                x += 1 * ix
-                y += 1 * iy
+                x += 1 * ax
+                y += 1 * ay
             return zlicz
 
         # Sprawdzanie dla linii pionowej, poziomej i ukośnych
@@ -103,8 +142,17 @@ class App(object):
             self.kulki_mx[x][y] = 0
             self.kulki_set.remove((x, y))
             return True
+        return False
 
     def przesun(self, kulka, pozycja):
+        """Metoda przesuwająca kulkę na podaną pozycję.
+        
+        Argumenty:
+            kulka (int, int):   Pozycja kulki, która ma zostać przesunięta.
+            pozycja(int, int):  Pozycja na którą kulka ma zostać przesunięta.
+        
+        Metoda zmienia pozycję kulki na wartość podaną w argumencie.    
+        """
         # Przesunięcie w zbiorze
         self.kulki_set.remove(kulka)
         self.kulki_set.add(pozycja)
@@ -114,6 +162,14 @@ class App(object):
         self.kulki_mx[kulka[0]][kulka[1]] = 0
 
     def ruch(self, przycisk, x, y):
+        # DOKOŃCZYĆ !!!
+        """Metoda odpowiadająca za reakcję na ruch gracza.
+        
+        Argumenty:
+            przycisk (Gtk.ToggleButton):    Przycisk wciśnięty na planszy.
+            x (int):                        Pozycja x wciśniętego przycisku.
+            y (int):                        Pozycja y wciśniętego przycisku.
+        """
         # Wciśnięty przycisk jest kulką
         if (x, y) in self.kulki_set:
             # Przed wciśnięciem przycisku wciśnięto inny przycisk
@@ -146,6 +202,14 @@ class App(object):
                     self.plansza.ustaw_przycisk(self.plansza.przyciski[x][y], self.kulki_mx[x][y])
 
     def losuj_kulki(self, n):
+        """Metoda losująca pozycję i kolor kulek.
+        
+        Argumenty:
+            n (int):    Liczba kulek, które mają zostać wylosowane.
+            
+        Metoda losuje n pozycji kulek, i kolor dla każdej nich. Jeśli po wylosowaniu nowej kulki, znajduje się ona w jednej linii z 5
+        sąsiadującymi ze soba kulkami o tym samym kolorze to zostają one usunięte.
+        """
         ilosc_kul = len(self.kulki_set)
 
         while len(self.kulki_set) < ilosc_kul + n and len(self.kulki_set) < 100:
@@ -160,6 +224,14 @@ class App(object):
                 self.sprawdz(nowa[0], nowa[1])
 
     def nowa_gra(self, przycisk):
+        """Metoda rozpoczynającą nową rozgrywkę.
+        
+        Argumenty:
+            przycisk (Gtk.Button):  Przycisk odpowiadający za wywołanie metody.
+            
+        Metoda aktualizuje pole wyświetlające listę 5 najlepszych wyników osiągniętych podczas jednej rozgrywki, czyści planszę, a następnie
+        losuje 50 nowych kul.
+        """
         # Przechowywanie niezeorwych wyników w kolejności malejącej
         if self.punkty:
             self.lista_wynikow.append(self.punkty)
