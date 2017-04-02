@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -14,7 +13,7 @@ class Plansza(Gtk.Table):
         Gtk.Table.__init__(self, 10, 10, True)
         # Macierz 10 x 10 przechowująca przyciski
         self.przyciski = [[Gtk.ToggleButton() for x in xrange(10)] for y in xrange(10)]
-        self.kulki = {1: 'kulka1.svg', 2: 'kulka2.svg', 3: 'kulka3.svg', 4: 'kulka4.svg', 5: 'kulka5.svg'}
+        self.kolory = {1: 'kulka1.svg', 2: 'kulka2.svg', 3: 'kulka3.svg', 4: 'kulka4.svg', 5: 'kulka5.svg'}
 
         # Ustawianie przycisków na planszy
         for x, y in product(xrange(10), repeat=2):
@@ -23,10 +22,11 @@ class Plansza(Gtk.Table):
 
     def ustaw_przycisk(self, przycisk, kolor_nr):
         img = Gtk.Image()
+
         # Ustawienie obrazka na przycisku
         if 0 < kolor_nr <= 5:
             przycisk.set_image(img)
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(self.kulki[kolor_nr], 35, 35)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(self.kolory[kolor_nr], 35, 35)
             img.set_from_pixbuf(pixbuf)
         else:
             przycisk.set_image(Gtk.Image())
@@ -34,28 +34,28 @@ class Plansza(Gtk.Table):
 
 class App(object):
     def __init__(self):
-        self.window = Gtk.Window()
+        self.window = Gtk.Window(title='Kulki')
         self.plansza = Plansza()
         self.hbox1 = Gtk.HBox()
         self.hbox2 = Gtk.HBox()
         self.vbox1 = Gtk.VBox()
         self.vbox2 = Gtk.VBox()
-        self.label_ranking = Gtk.Label('Ranking:')
         self.label_punkty = Gtk.Label()
+        self.label_ranking = Gtk.Label('Ranking:')
         self.nowa_gra_btn = Gtk.Button('Graj od początku')
-        self.kulki_mx = [[0 for x in xrange(10)] for y in xrange(10)]
-        self.kulki_set = set()
-        self.kulka = (-1, -1)
+        self.kulki_mx = [[0 for x in xrange(10)] for y in xrange(10)]   # Przechowuje kolory kulek
+        self.kulki_set = set()                                          # Przechowuje pozycje kulek
+        self.wcisnieta_kulka = ()
         self.punkty = 0
-        self.lista_rankingowa = []
+        self.lista_wynikow = []
 
         # Podłączenie wszystkich przycisków na planszy do metody
         for x, y in product(xrange(10), repeat=2):
             self.plansza.przyciski[x][y].connect('toggled', self.ruch, x, y)
 
         self.label_punkty.set_justify(Gtk.Justification.RIGHT)
-        self.label_ranking.set_size_request(50, 0)
         self.label_punkty.set_size_request(10, 30)
+        self.label_ranking.set_size_request(50, 0)
         self.nowa_gra_btn.set_size_request(0, 30)
         self.nowa_gra_btn.connect('clicked', self.nowa_gra)
 
@@ -75,33 +75,30 @@ class App(object):
     def sprawdz(self, x, y):
         kolor = self.kulki_mx[x][y]
         czy_usunac = False
-        kulki = []
-        w_linii = 1
+        do_usuniecia = []
 
-        def sprawdz_linie(x, y, ix, iy, count):
+        def sprawdz_linie(x, y, ix, iy, zlicz):
             while 0 <= x < 10 and 0 <= y < 10 and kolor == self.kulki_mx[x][y]:
-                count += 1
-                kulki.append((x, y))
+                zlicz += 1
+                do_usuniecia.append((x, y))
                 x += 1 * ix
                 y += 1 * iy
-            return count
+            return zlicz
 
-        def usun():
-            for kulka in kulki:
-                self.kulki_mx[kulka[0]][kulka[1]] = 0
-                self.kulki_set.remove(kulka)
-
+        # Sprawdzanie dla linii pionowej, poziomej i ukośnych
         it_lst = [(i, j) for i, j in product(xrange(-1, 2), repeat=2)]
         for i, j in zip(it_lst[:-5], it_lst[5:][::-1]):
             w_linii = sprawdz_linie(x + i[0], y + i[1], i[0], i[1], 1)
             w_linii = sprawdz_linie(x + j[0], y + j[1], j[0], j[1], w_linii)
 
             if w_linii >= 5:
-                usun()
+                for kulka in do_usuniecia:
+                    self.kulki_mx[kulka[0]][kulka[1]] = 0
+                    self.kulki_set.remove(kulka)
                 czy_usunac = True
+            do_usuniecia = []
 
-            kulki = []
-
+        # Jeśli przycisk znajdował się w linii to go usuń
         if czy_usunac:
             self.kulki_mx[x][y] = 0
             self.kulki_set.remove((x, y))
@@ -119,58 +116,72 @@ class App(object):
     def ruch(self, przycisk, x, y):
         # Wciśnięty przycisk jest kulką
         if (x, y) in self.kulki_set:
-            self.plansza.przyciski[self.kulka[0]][self.kulka[1]].set_active(False)
-            self.kulka = (x, y)
-        # Wciśnięty przycisk jest pusty
+            # Przed wciśnięciem przycisku wciśnięto inny przycisk
+            if self.wcisnieta_kulka and (x, y) != self.wcisnieta_kulka:
+                self.plansza.przyciski[self.wcisnieta_kulka[0]][self.wcisnieta_kulka[1]].set_active(False)
+            self.wcisnieta_kulka = (x, y)
+
+        # Została wciśnięta pusta pozycja
         else:
-            # Jeśli pusta pozycja została wciśnięta przed kulką
-            if self.kulka == (-1, -1):
+            # Pusta pozycja została wciśnięta przed wciśnięciem kulki
+            if not self.wcisnieta_kulka:
                 przycisk.set_active(False)
-            # Pusta pozycja została wciśnięta po kulce
+
+            # Pusta pozycja została wciśnięta po wciśnięciu kulki
             elif przycisk.get_active():
-                self.przesun(self.kulka, (x, y))
-                self.plansza.przyciski[self.kulka[0]][self.kulka[1]].set_active(False)
+                self.przesun(self.wcisnieta_kulka, (x, y))
+                self.plansza.przyciski[self.wcisnieta_kulka[0]][self.wcisnieta_kulka[1]].set_active(False)
                 self.plansza.przyciski[x][y].set_active(False)
+
+                # Jeśli przesunięta linia nie znajduje się w linii 5 kulek to wylosuj 3 nowe kulki
                 if not self.sprawdz(x, y):
                     self.losuj_kulki(3)
+
                 self.punkty += 1
                 self.label_punkty.set_markup('Liczba punktów: <b>{}</b>'.format(self.punkty))
-                self.kulka = (-1, -1)
+                self.wcisnieta_kulka = ()
 
-                # DO USUNIĘCIA ???
+                # Aktualizuj kulki na planszy
                 for x, y in product(xrange(10), repeat=2):
                     self.plansza.ustaw_przycisk(self.plansza.przyciski[x][y], self.kulki_mx[x][y])
 
     def losuj_kulki(self, n):
-        # Losowanie n pozycji kul
         ilosc_kul = len(self.kulki_set)
-        nowe = set()
-        while len(self.kulki_set) < ilosc_kul + n and len(self.kulki_set) < 100:
-            self.kulki_set.add((randint(0, 9), randint(0, 9)))
 
-        # SET ZMIENIA ROZMIAR PODCZAS ITEROWANIA
-        # Losowanie koloru
-        for kulka in self.kulki_set:
-            if not self.kulki_mx[kulka[0]][kulka[1]]:
-                self.kulki_mx[kulka[0]][kulka[1]] = randint(1, 5)
-                # self.sprawdz(kulka[0], kulka[1])
+        while len(self.kulki_set) < ilosc_kul + n and len(self.kulki_set) < 100:
+            rozmiar = len(self.kulki_set)
+            nowa = (randint(0, 9), randint(0, 9))
+            self.kulki_set.add(nowa)
+            nowy_rozmiar = len(self.kulki_set)
+
+            # Sprawdzanie, po wylowaniu każdej nowej kulki, czy w linii nie znajduje się 5 takich samych kulek
+            if rozmiar != nowy_rozmiar:
+                self.kulki_mx[nowa[0]][nowa[1]] = randint(1, 5)
+                self.sprawdz(nowa[0], nowa[1])
 
     def nowa_gra(self, przycisk):
+        # Przechowywanie niezeorwych wyników w kolejności malejącej
         if self.punkty:
-            self.lista_rankingowa.append(self.punkty)
-            self.lista_rankingowa.sort(reverse=True)
+            self.lista_wynikow.append(self.punkty)
+            self.lista_wynikow.sort(reverse=True)
             self.label_ranking.set_text('Ranking:\n')
 
-            for i in xrange(len(self.lista_rankingowa)):
-                self.label_ranking.set_markup(self.label_ranking.get_text() + '<b>{}.</b>\t{}\n'.format(i + 1, self.lista_rankingowa[i]))
+            # Dodawanie wyników do labeli
+            i = 1
+            for wynik in self.lista_wynikow[:5]:
+                self.label_ranking.set_markup(self.label_ranking.get_text() + '<b>{}.</b>\t{}\n'.format(i, wynik))
+                i += 1
 
+        # Resetowanie danych
         self.punkty = 0
         self.kulki_mx = [[0 for x in xrange(10)] for y in xrange(10)]
         self.kulki_set = set()
         self.label_punkty.set_markup('Liczba punktów: <b>{}</b>'.format(self.punkty))
+
         # Na początku każdej rozgrywki wylosuj 50 kul
         self.losuj_kulki(50)
 
+        # Aktualizuj kulki na planszy
         for x, y in product(xrange(10), repeat=2):
             self.plansza.ustaw_przycisk(self.plansza.przyciski[x][y], self.kulki_mx[x][y])
 
