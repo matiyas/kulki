@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#!/usr/bin/env python
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -74,107 +75,33 @@ class App(object):
     def sprawdz(self, x, y):
         kolor = self.kulki_mx[x][y]
         czy_usunac = False
-
-        w_linii = 1
         kulki = []
+        w_linii = 1
 
-        # Sprawdź w poziomie z lewej
-        i = x - 1
-        while i >= 0 and kolor == self.kulki_mx[i][y]:
-            w_linii += 1
-            kulki.append((i, y))
-            i -= 1
+        def sprawdz_linie(x, y, ix, iy, count):
+            while 0 <= x < 10 and 0 <= y < 10 and kolor == self.kulki_mx[x][y]:
+                count += 1
+                kulki.append((x, y))
+                x += 1 * ix
+                y += 1 * iy
+            return count
 
-        # Sprawdź w poziomie z prawej
-        i = x + 1
-        while i < 10 and kolor == self.kulki_mx[i][y]:
-            w_linii += 1
-            kulki.append((i, y))
-            i += 1
-
-        # Usuń sąsiednie kulki w poziomie
-        if w_linii >= 5:
+        def usun():
             for kulka in kulki:
-                czy_usunac = True
                 self.kulki_mx[kulka[0]][kulka[1]] = 0
                 self.kulki_set.remove(kulka)
 
-        # Sprawdź w pionie powyżej
-        w_linii = 1
-        kulki = []
-        i = y - 1
-        while i >= 0 and kolor == self.kulki_mx[x][i]:
-            w_linii += 1
-            kulki.append((x, i))
-            i -= 1
+        it_lst = [(i, j) for i, j in product(xrange(-1, 2), repeat=2)]
+        for i, j in zip(it_lst[:-5], it_lst[5:][::-1]):
+            w_linii = sprawdz_linie(x + i[0], y + i[1], i[0], i[1], 1)
+            w_linii = sprawdz_linie(x + j[0], y + j[1], j[0], j[1], w_linii)
 
-        # Sprawdź w pionie poniżej
-        i = y + 1
-        while i < 10 and kolor == self.kulki_mx[x][i]:
-            w_linii += 1
-            kulki.append((x, i))
-            i += 1
-
-        # Usuń sąsiednie kulki w pionie
-        if w_linii >= 5:
-            for kulka in kulki:
+            if w_linii >= 5:
+                usun()
                 czy_usunac = True
-                self.kulki_mx[kulka[0]][kulka[1]] = 0
-                self.kulki_set.remove(kulka)
 
-        w_linii = 1
-        kulki = []
-
-        # Sprawdź po ukosie od góry od lewej
-        i = x - 1
-        j = y - 1
-        while i >= 0 and j >= 0 and kolor == self.kulki_mx[i][j]:
-            w_linii += 1
-            kulki.append((i, j))
-            i -= 1
-            j -= 1
-
-        i = x + 1
-        j = y + 1
-        while i < 10 and j < 10 and kolor == self.kulki_mx[i][j]:
-            w_linii += 1
-            kulki.append((i, j))
-            i += 1
-            j += 1
-
-        if w_linii >= 5:
-            for kulka in kulki:
-                czy_usunac = True
-                self.kulki_mx[kulka[0]][kulka[1]] = 0
-                self.kulki_set.remove(kulka)
-
-            w_linii = 1
             kulki = []
 
-        # Sprawdź po ukosie od góry od prawej
-        i = x + 1
-        j = y - 1
-        while i < 10 and j >= 0 and kolor == self.kulki_mx[i][j]:
-            w_linii += 1
-            kulki.append((i, j))
-            i += 1
-            j -= 1
-
-        i = x - 1
-        j = y + 1
-        while i >= 0 and j < 10 and kolor == self.kulki_mx[i][j]:
-            w_linii += 1
-            kulki.append((i, j))
-            i -= 1
-            j += 1
-
-        if w_linii >= 5:
-            for kulka in kulki:
-                czy_usunac = True
-                self.kulki_mx[kulka[0]][kulka[1]] = 0
-                self.kulki_set.remove(kulka)
-
-        # Usuń kulkę 'bazową'
         if czy_usunac:
             self.kulki_mx[x][y] = 0
             self.kulki_set.remove((x, y))
@@ -226,7 +153,7 @@ class App(object):
         for kulka in self.kulki_set:
             if not self.kulki_mx[kulka[0]][kulka[1]]:
                 self.kulki_mx[kulka[0]][kulka[1]] = randint(1, 5)
-                self.sprawdz(kulka[0], kulka[1])
+                # self.sprawdz(kulka[0], kulka[1])
 
     def nowa_gra(self, przycisk):
         if self.punkty:
