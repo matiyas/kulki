@@ -162,13 +162,14 @@ class App(object):
         self.kulki_mx[kulka[0]][kulka[1]] = 0
 
     def ruch(self, przycisk, x, y):
-        # DOKOŃCZYĆ !!!
         """Metoda odpowiadająca za reakcję na ruch gracza.
         
         Argumenty:
             przycisk (Gtk.ToggleButton):    Przycisk wciśnięty na planszy.
             x (int):                        Pozycja x wciśniętego przycisku.
             y (int):                        Pozycja y wciśniętego przycisku.
+        
+        Metoda odpowiada za odpowiednie podświetlanie przecisków, kontrolowanie wyświetlania kulek na odpowiednim miejscu, oraz obliczanie ilości punktów.
         """
         # Wciśnięty przycisk jest kulką
         if (x, y) in self.kulki_set:
